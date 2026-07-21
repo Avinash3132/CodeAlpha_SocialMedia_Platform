@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Post by {{ post.user.username }} | ConnectHub{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center g-4">
+    <div class="col-lg-7">
+
+      <!-- Back Button -->
+      <a href="{% url 'posts:feed' %}"
+         style="display:inline-flex; align-items:center; gap:0.4rem;
+                color:var(--gray-500); text-decoration:none; font-weight:600;
+                font-size:0.9rem; margin-bottom:1rem;">
+        <i class="bi bi-arrow-left"></i> Back to Feed
+      </a>
+
+      <!-- Post Card -->
+      <div class="post-card">
+        <div class="post-header">
+          <a href="{% url 'users:profile' post.user.username %}">
+            {% if post.user.profile.profile_picture %}
+              <img src="{{ post.user.profile.profile_picture.url }}"
+                   style="width:48px; height:48px; border-radius:50%;
+                          object-fit:cover; flex-shrink:0;"
+                   alt="{{ post.user.username }}"/>
+            {% else %}
+              <div style="width:48px; height:48px; border-radius:50%;
+                          background:var(--gradient); display:flex;
+                          align-items:center; justify-content:center;
+                          color:white; font-weight:800; font-size:1.1rem;
+                          flex-shrink:0;">
+                {{ post.user.username|first|upper }}
+              </div>
+            {% endif %}
+          </a>
+          <div style="flex:1;">
+            <a href="{% url 'users:profile' post.user.username %}"
+               class="post-username">
+              {{ post.user.get_full_name|default:post.user.username }}
+            </a>
+            <div class="post-time">
+              {{ post.created_at|date:"F j, Y · g:i A" }}
+            </div>
+          </div>
+          {% if post.user == request.user %}
+          <div class="dropdown">
+            <button class="btn btn-sm btn-light rounded-circle"
+                    data-bs-toggle="dropdown"
+                    style="width:32px; height:32px; padding:0; border:none;">
+              <i class="bi bi-three-dots"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+              <li>
+                <a class="dropdown-item py-2"
+                   href="{% url 'posts:edit_post' post.id %}">
+                  <i class="bi bi-pencil me-2 text-primary"></i>Edit
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item py-2 text-danger delete-btn"
+                   href="{% url 'posts:delete_post' post.id %}">
+                  <i class="bi bi-trash me-2"></i>Delete
+                </a>
+              </li>
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if post.content %}
+        <div class="post-content"
+             style="font-size:1.05rem; padding:0.5rem 1.25rem 1rem;">
+          {{ post.content|linebreaks }}
+        </div>
+        {% endif %}
+
+        {% if post.image %}
+        <img src="{{ post.image.url }}"
+             class="post-image" alt="Post image"/>
+        {% endif %}
+
+        <div class="post-actions">
+          <a href="{% url 'posts:like_post' post.id %}"
+             class="post-action-btn like-btn
+             {% if request.user in post.likes.all %}liked{% endif %}">
+            <i class="bi bi-heart{% if request.user in post.likes.all %}-fill{% endif %}"></i>
+            {{ post.get_likes_count }} Like{{ post.get_likes_count|pluralize }}
+          </a>
+          <span class="post-action-btn" style="cursor:default;">
+            <i class="bi bi-chat"></i>
+            {{ post.get_comments_count }} Comment{{ post.get_comments_count|pluralize }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Comments Section -->
+      <div class="post-card mt-3">
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid var(--gray-100);
+                    font-weight:700; font-size:0.95rem;">
+          <i class="bi bi-chat-dots me-2"
+             style="color:var(--primary);"></i>
+          Comments ({{ post.get_comments_count }})
+        </div>
+
+        <!-- Add Comment -->
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid var(--gray-100);">
+          <form method="post">
+            {% csrf_token %}
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+              {% if request.user.profile.profile_picture %}
+                <img src="{{ request.user.profile.profile_picture.url }}"
+                     style="width:36px; height:36px; border-radius:50%;
+                            object-fit:cover; flex-shrink:0;"/>
+              {% else %}
+                <div style="width:36px; height:36px; border-radius:50%;
+                            background:var(--gradient); display:flex;
+                            align-items:center; justify-content:center;
+                            color:white; font-weight:800; font-size:0.85rem;
+                            flex-shrink:0;">
+                  {{ request.user.username|first|upper }}
+                </div>
+              {% endif %}
+              <div style="flex:1; display:flex; gap:0.5rem;">
+                {{ comment_form.content }}
+                <button type="submit" class="btn-primary-custom"
+                        style="padding:0.45rem 1rem; font-size:0.85rem;
+                               white-space:nowrap;">
+                  Post
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Comments List -->
+        <div style="padding:0.75rem 1.25rem;">
+          {% if comments %}
+            {% for comment in comments %}
+            <div class="comment-item">
+              <a href="{% url 'users:profile' comment.user.username %}">
+                {% if comment.user.profile.profile_picture %}
+                  <img src="{{ comment.user.profile.profile_picture.url }}"
+                       style="width:36px; height:36px; border-radius:50%;
+                              object-fit:cover; flex-shrink:0;"/>
+                {% else %}
+                  <div style="width:36px; height:36px; border-radius:50%;
+                              background:var(--gradient); display:flex;
+                              align-items:center; justify-content:center;
+                              color:white; font-weight:800; font-size:0.85rem;
+                              flex-shrink:0;">
+                    {{ comment.user.username|first|upper }}
+                  </div>
+                {% endif %}
+              </a>
+              <div class="comment-bubble">
+                <a href="{% url 'users:profile' comment.user.username %}"
+                   class="comment-author">
+                  {{ comment.user.get_full_name|default:comment.user.username }}
+                </a>
+                <div class="comment-text">{{ comment.content }}</div>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <span class="comment-time">
+                    {{ comment.created_at|timesince }} ago
+                  </span>
+                  {% if comment.user == request.user %}
+                  <a href="{% url 'posts:delete_comment' comment.id %}"
+                     class="delete-btn"
+                     style="font-size:0.75rem; color:var(--danger);
+                            text-decoration:none;">
+                    Delete
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div style="text-align:center; padding:2rem;
+                        color:var(--gray-400); font-size:0.9rem;">
+              No comments yet. Be the first to comment!
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
